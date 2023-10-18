@@ -1,27 +1,39 @@
 const fs = require('fs');
+const {readFile} = require('fs/promises');
 const path = require('path');
 const wordCount = require('word-count');
 
-const configPath = path.join(__dirname, 'config.json');
-const config = require(configPath);
 
+const configPath = path.join(__dirname, 'config.json');
+const config = require('./config.json');
 const filePaths = config.files;
 
-function processFile(filePath) {
-    // get file Name like => file1.txt
-    const fileNmae = filePath.replace(/^.*[\\\/]/, '');
-    fs.readFile(filePath, 'utf8', (err, content) => {
-      if (err) { // check if an error in files
-        console.error(`Error in reading => ${fileNmae}: => ${err}`);
-        return;
-      }
+async function readFiles(filePath){
   
-      const wordCountResult = wordCount(content);
-      console.log(`${fileNmae}: ${wordCountResult} words`);
-    });
-  };
+    try {
+      // get folder name 
+      const folderName = path.basename(path.dirname(filePath));
+      // get file name 
+      const  fileName = filePath.split(/(\\|\/)/g).pop();
 
-  filePaths.forEach(filePath => {
-    const absoluteFilePath = path.join(__dirname, filePath);
-    processFile(absoluteFilePath);
-  });
+      const data = await readFile(filePath,'utf8', (err, content) => {
+          if (err) {
+            console.error(`Error reading ${filePath}: ${err}`);
+            return;
+          }
+
+        });
+
+        // print files \ fileName and count of words if count = 0 the retrun file is empty
+        console.log(`${folderName}\\${fileName}: ${wordCount(data.toString()) === 0 ? 'Empty file' : wordCount(data.toString())} words`);
+
+    } catch (error) {
+        console.error(`Files that do not exist: ${error.message}`);
+    }
+}
+
+filePaths.forEach(filePath => {
+  const absoluteFilePath = path.join(__dirname, filePath);
+  readFiles(absoluteFilePath);
+
+});
